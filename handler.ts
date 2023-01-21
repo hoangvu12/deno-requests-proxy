@@ -1,5 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
 
+import { config } from "https://deno.land/std@0.173.0/dotenv/mod.ts";
+
+const configData = await config();
+
+const ALLOWED_DOMAINS =
+  configData["DOMAINS"]?.split(",").map((domain) => domain.trim()) || [];
+
 // https://stackoverflow.com/questions/1714786/query-string-encoding-of-a-javascript-object
 const serialize = (obj: Record<string, any>) => {
   const str = [];
@@ -119,6 +126,16 @@ const concatHeaders = (...args: Record<string, any>[]) => {
 };
 
 export default async (req: Request) => {
+  const referer = req.headers.get("referer");
+
+  if (!referer) {
+    return new Response("Now allowed", { status: 403 });
+  }
+
+  if (!ALLOWED_DOMAINS.includes(referer)) {
+    return new Response("Not allowed", { status: 403 });
+  }
+
   const { searchParams } = new URL(req.url);
   const entries = searchParams.entries();
   const query = composeQuery(paramsToObject(entries));
@@ -157,14 +174,6 @@ export default async (req: Request) => {
     },
     {}
   );
-
-  //   const response = await axios.get(decodedUrl, {
-  //     responseType: "stream",
-  //     headers: filteredHeaders,
-  //     validateStatus: () => true,
-  //     maxRedirects: !followRedirect ? 0 : 5,
-  //     decompress,
-  //   });
 
   const response = await fetch(decodedUrl, {
     headers: filteredHeaders,
