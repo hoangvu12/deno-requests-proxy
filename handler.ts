@@ -132,7 +132,7 @@ export default async (req: Request) => {
     return new Response("Now allowed", { status: 403 });
   }
 
-  if (!ALLOWED_DOMAINS.includes(referer)) {
+  if (!ALLOWED_DOMAINS.some((domain) => referer.includes(domain))) {
     return new Response("Not allowed", { status: 403 });
   }
 
