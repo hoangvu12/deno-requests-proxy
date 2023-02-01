@@ -138,6 +138,7 @@ export default async (req: Request) => {
 
   const { searchParams } = new URL(req.url);
   const entries = searchParams.entries();
+
   const query = composeQuery(paramsToObject(entries));
 
   const {
@@ -161,8 +162,10 @@ export default async (req: Request) => {
 
   let headers = concatHeaders({ host, ...appendReqHeaders });
 
+  const reqHeaders = Object.fromEntries(req.headers.entries());
+
   if (!ignoreReqHeaders) {
-    headers = concatHeaders(req.headers, headers);
+    headers = concatHeaders(reqHeaders, headers);
   }
 
   const filteredHeaders = Object.keys(headers).reduce(
@@ -178,6 +181,8 @@ export default async (req: Request) => {
   const response = await fetch(decodedUrl, {
     headers: filteredHeaders,
     redirect: !followRedirect ? "manual" : "follow",
+    method: req.method,
+    ...(req.method === "POST" && { body: req.body }),
   });
 
   const corsHeaders = {
@@ -185,8 +190,10 @@ export default async (req: Request) => {
     "Access-Control-Allow-Methods": "*",
   };
 
+  const responseHeaders = Object.fromEntries(response.headers.entries());
+
   const resHeaders = concatHeaders(
-    response.headers,
+    responseHeaders,
     corsHeaders,
     appendResHeaders
   );
@@ -200,7 +207,7 @@ export default async (req: Request) => {
       const originalUrl = resHeaders[header];
       const encodedUrl = encodeURIComponent(originalUrl);
       const redirectUrl = redirectWithProxy
-        ? `/proxy?url=${encodedUrl}&${serialize(query)}`
+        ? `/url=${encodedUrl}&${serialize(query)}`
         : originalUrl;
 
       return Response.redirect(redirectUrl, response.status);
