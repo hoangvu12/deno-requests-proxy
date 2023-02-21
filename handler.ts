@@ -129,10 +129,13 @@ export default async (req: Request) => {
   const referer = req.headers.get("referer");
 
   if (!referer) {
-    return new Response("Now allowed", { status: 403 });
+    return new Response("Not allowed", { status: 403 });
   }
 
-  if (!ALLOWED_DOMAINS.some((domain) => referer.includes(domain))) {
+  if (
+    ALLOWED_DOMAINS?.length &&
+    !ALLOWED_DOMAINS.some((domain) => referer.includes(domain))
+  ) {
     return new Response("Not allowed", { status: 403 });
   }
 
